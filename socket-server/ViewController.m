@@ -42,13 +42,14 @@
     self.clientSocket= newSocket;
     [self showMessageWithStr:@"链接成功"];
     [self showMessageWithStr:[NSString stringWithFormat:@"服务器地址：%@ 端口：%d", newSocket.connectedHost, newSocket.connectedPort]];
-    [self.clientSocket readDataWithTimeout:-1 tag:0];
+//    [self.clientSocket readDataWithTimeout:-1 tag:0];
 }
 
 //收到消息
 
 - (void)socket:(GCDAsyncSocket*)sock didReadData:(NSData*)data withTag:(long)tag{
-    NSString*text = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+    NSString *text = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+    NSLog(@"message%@ receive", text);
     [self showMessageWithStr:text];
     [self.clientSocket readDataWithTimeout:-1 tag:0];
 }
@@ -75,6 +76,10 @@
     }
 }
 
+- (IBAction)cleanMessageTV:(id)sender {
+    self.showContentMessageTV.text = @"";
+}
+
 //接受消息,socket是客户端socket，表示从哪一个客户端读取消息
 
 - (IBAction)ReceiveMessage:(id)sender {
@@ -82,7 +87,7 @@
 }
 
 - (void)showMessageWithStr:(NSString*)str{
-    self.showContentMessageTV.text= [self.showContentMessageTV.text stringByAppendingFormat:@"%@\n",str];
+    self.showContentMessageTV.text = [self.showContentMessageTV.text stringByAppendingFormat:@"%@\n",str];
     
 }
 
@@ -101,6 +106,10 @@
             if(temp_addr->ifa_addr->sa_family == AF_INET) {
                 // Check if interface is en0 which is the wifi connection on the iPhone
                 if([[NSString stringWithUTF8String:temp_addr->ifa_name] isEqualToString:@"en1"]) {
+                    // Get NSString from C String
+                    address = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp_addr->ifa_addr)->sin_addr)];
+                }
+                if([[NSString stringWithUTF8String:temp_addr->ifa_name] isEqualToString:@"en0"]) {
                     // Get NSString from C String
                     address = [NSString stringWithUTF8String:inet_ntoa(((struct sockaddr_in *)temp_addr->ifa_addr)->sin_addr)];
                 }
@@ -218,11 +227,17 @@
     msg.text = @"消息";
     [self.view addSubview:msg];
     
-    UIButton *startListen = [[UIButton alloc] initWithFrame:CGRectMake(130, 30, 90, 30)];
+    UIButton *startListen = [[UIButton alloc] initWithFrame:CGRectMake(130, 30, 45, 30)];
     [self.view addSubview:startListen];
-    [startListen setTitle:@"开始监听" forState:UIControlStateNormal];
+    [startListen setTitle:@"监听" forState:UIControlStateNormal];
     [startListen setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
     [startListen addTarget:self action:@selector(startReceive:) forControlEvents:UIControlEventTouchUpInside];
+
+    UIButton *clearTV = [[UIButton alloc] initWithFrame:CGRectMake(175, 30, 45, 30)];
+    [self.view addSubview:clearTV];
+    [clearTV setTitle:@"清空" forState:UIControlStateNormal];
+    [clearTV setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    [clearTV addTarget:self action:@selector(cleanMessageTV:) forControlEvents:UIControlEventTouchUpInside];
     
     UIButton *sendMsg= [[UIButton alloc] initWithFrame:CGRectMake(220, 30, 70, 30)];
     [self.view addSubview:sendMsg];
@@ -246,8 +261,9 @@
     self.messageTF.layer.borderWidth= 1.0f;
     self.showContentMessageTV = [[UITextView alloc] initWithFrame:CGRectMake(20, 100, 300, 300)];
     self.showContentMessageTV.layer.backgroundColor =[[UIColor grayColor]CGColor];
-    self.showContentMessageTV.text = [self getMyIPAddress];
-    //[self getIPAddress:true];
+    self.showContentMessageTV.text =
+    [self getMyIPAddress];          // simulator
+    //[self getIPAddress:true];   // real device
     [self.view addSubview:self.portF];
     [self.view addSubview:self.messageTF];
     [self.view addSubview:self.showContentMessageTV];
